@@ -35,12 +35,14 @@ model = lora.wrap(model)
 
 Run `python cvtckpt.py` to make conversions between checkpoint files with and without LoRA after training
 - Set `mode = 'embed'` to embed LoRA weights into Stable Diffusion weights and save the ensemble. The LoRA structure is PRESERVED in the saved checkpoint file for training or sampling with the wrapped model
-- Set `mode == 'extract'` to extract and save LoRA weights from a wrapped model. The saved checkpoint file is much smaller than the ensemble
-- Set `mode == 'merge'` to merge LoRA weights into Stable Diffusion weights and save the ensemble. The LoRA structure is ERASED in the saved checkpoint file for training or sampling with the LoRA-free model. Merging with multiple LoRA weights supported
+- Set `mode = 'extract'` to extract and save LoRA weights from a wrapped model. The saved checkpoint file is much smaller than the ensemble
+- Set `mode = 'merge'` to merge LoRA weights into Stable Diffusion weights and save the ensemble. The LoRA structure is ERASED in the saved checkpoint file for training or sampling with the LoRA-free model. Merging with multiple LoRA weights supported
 
 ## Bugs & Limitations
 
 ### Bugs
+
+- To be tested...
 
 ### Limitations
 
