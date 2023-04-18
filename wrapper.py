@@ -8,10 +8,10 @@ class LoRAWrapper(nn.Module):
         super().__init__()
         self.base_layer = base_layer
         self.base_layer.requires_grad_(False)
-        self.r = r
-        self.scale = nn.Parameter(torch.tensor(scale).float())
+        self.lora_r = r
+        self.lora_scale = nn.Parameter(torch.tensor(scale).float())
         if not trainable_scale:
-            self.scale.requires_grad_(False)
+            self.lora_scale.requires_grad_(False)
 
 
 class LinearWrapper(LoRAWrapper):
@@ -20,11 +20,11 @@ class LinearWrapper(LoRAWrapper):
         assert isinstance(self.base_layer, nn.Linear), \
             f'[ERROR] LinearWrapper applied on an instance of {self.base_layer.__class__.__name__}'
         weight_size = self.base_layer.weight.size()
-        self.lora_B = nn.Parameter(torch.zeros(weight_size[0], self.r).float())
-        self.lora_A = nn.Parameter(torch.randn(self.r, weight_size[1]).float() / self.r)
+        self.lora_B = nn.Parameter(torch.zeros(weight_size[0], self.lora_r).float())
+        self.lora_A = nn.Parameter(torch.randn(self.lora_r, weight_size[1]).float() / self.lora_r)
 
     def forward(self, x):
-        weight = self.base_layer.weight + self.scale * self.lora_B @ self.lora_A
+        weight = self.base_layer.weight + self.lora_scale * self.lora_B @ self.lora_A
         return f.linear(x, weight, self.base_layer.bias)
 
 
@@ -38,12 +38,12 @@ class ConvHardWrapper(LoRAWrapper):
         assert self.base_layer.kernel_size == 1, \
             f'[ERROR] ConvHardWrapper applied on a layer with kernel size {self.base_layer.kernel_size}'
         weight_size = self.base_layer.weight.size()
-        self.lora_B = nn.Parameter(torch.zeros(weight_size[0], self.r).float())
-        self.lora_A = nn.Parameter(torch.randn(self.r, weight_size[1]).float() / self.r)
+        self.lora_B = nn.Parameter(torch.zeros(weight_size[0], self.lora_r).float())
+        self.lora_A = nn.Parameter(torch.randn(self.lora_r, weight_size[1]).float() / self.lora_r)
         self.convnd = [f.conv1d, f.conv2d, f.conv3d][len(weight_size) - 1]
 
     def forward(self, x):
-        lora_weight = self.scale * (self.lora_B @ self.lora_A)
+        lora_weight = self.lora_scale * (self.lora_B @ self.lora_A)
         weight = self.base_layer.weight + lora_weight.contiguous().view(*self.base_layer.weight.size())
         return self.convnd(x, weight, self.base_layer.bias, self.base_layer.stride,
                            self.base_layer.padding, self.base_layer.dilation, self.base_layer.groups)
@@ -56,19 +56,19 @@ class ConvSoftWrapper(LoRAWrapper):
         super().__init__(base_layer, r, scale, trainable_scale)
         assert isinstance(self.base_layer, nn.modules.conv._ConvNd), \
             f'[ERROR] ConvSoftWrapper applied on an instance of {self.base_layer.__class__.__name__}'
-        self.lora_B = nn.Conv2d(self.base_layer.in_channels, self.r, self.base_layer.kernel_size,
+        self.lora_B = nn.Conv2d(self.base_layer.in_channels, self.lora_r, self.base_layer.kernel_size,
                                 self.base_layer.stride, self.base_layer.padding, self.base_layer.dilation,
                                 self.base_layer.groups, bias=False)
         nn.init.zeros_(self.lora_B.weight)
-        self.lora_A = nn.Conv2d(self.r, self.base_layer.out_channels, self.base_layer.kernel_size,
+        self.lora_A = nn.Conv2d(self.lora_r, self.base_layer.out_channels, self.base_layer.kernel_size,
                                 self.base_layer.stride, self.base_layer.padding, self.base_layer.dilation,
                                 self.base_layer.groups, bias=False)
-        nn.init.normal_(self.lora_A.weight, std=1 / self.r)
+        nn.init.normal_(self.lora_A.weight, std=1 / self.lora_r)
 
     def forward(self, x):
         base_output = self.base_layer(x)
         lora_output = self.lora_A(self.lora_B(x))
-        return base_output + self.scale * lora_output
+        return base_output + self.lora_scale * lora_output
 
 
 def ConvWrapper(base_layer, r, scale=1, hard=True):

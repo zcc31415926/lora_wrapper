@@ -42,6 +42,12 @@ Run `python cvtckpt.py` to make conversions between checkpoint files with and wi
 
 ### `rank = 8` LoRA on all `to_q`, `to_v`, `qkv_proj` layers of Stable Diffusion v1-4:
 
+Total parameter scale: 1.1B \Rightarrow 1.1B
+
+Trainable parameter scale: 859M \Rightarrow 797K
+
+Checkpoint size: 3.98G \Rightarrow 3.08M
+
 Device: 2 * RTX3090 (24G)
 | `image_size` & `batch_size` | Stable Diffusion | Stable Diffusion + LoRA |
 | --- | --- | --- |
