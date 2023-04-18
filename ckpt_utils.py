@@ -79,7 +79,7 @@ def checkSoftWrappers(weights):
     return False
 
 
-def embedLoRAWeights(model_ckpt, lora_ckpt):
+def embedLoRAWeights(model_ckpt, lora_ckpt, out_ckpt=None):
     sd_weights = torch.load(model_ckpt, map_location='cpu')
     lora_weights = torch.load(lora_ckpt, map_location='cpu')
     if 'state_dict' in sd_weights.keys():
@@ -87,25 +87,23 @@ def embedLoRAWeights(model_ckpt, lora_ckpt):
         sd_weights['state_dict'] = model_weights
     else:
         sd_weights = embedLoRA(sd_weights, lora_weights)
-    name_segs, suffix = model_ckpt.split('.')[: -1], model_ckpt.split('.')[-1]
-    ckpt = '.'.join(name_segs) + '_withlora.' + suffix
-    torch.save(sd_weights, ckpt)
+    out_ckpt = './embedded.ckpt' if out_ckpt is None else out_ckpt
+    torch.save(sd_weights, out_ckpt)
     print(f'[ LOG ] Ensemble with backbone weights {model_ckpt}'
-          f'and embedded LoRA weights {lora_ckpt} saved in {ckpt}')
+          f'and embedded LoRA weights {lora_ckpt} saved in {out_ckpt}')
 
 
-def extractLoRAWeights(model_ckpt, lora_ckpt=None):
+def extractLoRAWeights(model_ckpt, out_ckpt=None):
     model_weights = torch.load(model_ckpt, map_location='cpu')
     if 'state_dict' in model_weights.keys():
         model_weights = model_weights['state_dict']
     lora_weights = extractLoRA(model_weights)
-    name_segs, suffix = model_ckpt.split('.')[: -1], model_ckpt.split('.')[-1]
-    ckpt = '.'.join(name_segs) + '_lora.' + suffix
-    torch.save(lora_weights, ckpt)
-    print(f'[ LOG ] LoRA weights extracted from {model_ckpt} saved in {ckpt}')
+    out_ckpt = './lora.ckpt' if out_ckpt is None else out_ckpt
+    torch.save(lora_weights, out_ckpt)
+    print(f'[ LOG ] LoRA weights extracted from {model_ckpt} saved in {out_ckpt}')
 
 
-def mergeLoRAWeights(model_ckpt, lora_ckpts=[]):
+def mergeLoRAWeights(model_ckpt, lora_ckpts=[], out_ckpt=None):
     model_weights = torch.load(model_ckpt, map_location='cpu')
     lora_weights = [torch.load(f, map_location='cpu') for f in lora_ckpts]
     if 'state_dict' in model_weights.keys():
@@ -113,9 +111,8 @@ def mergeLoRAWeights(model_ckpt, lora_ckpts=[]):
         model_weights['state_dict'] = merged_weights
     else:
         model_weights = mergeLoRA(model_weights, lora_weights)
-    name_segs, suffix = model_ckpt.split('.')[: -1], model_ckpt.split('.')[-1]
-    ckpt = '.'.join(name_segs) + '_loramerged.' + suffix
-    torch.save(model_weights, model_ckpt)
+    out_ckpt = './merged.ckpt' if out_ckpt is None else out_ckpt
+    torch.save(model_weights, out_ckpt)
     print(f'[ LOG ] Ensemble with backbone weights {model_ckpt}'
-          f'and merged LoRA weights {lora_ckpts} saved in {ckpt}')
+          f'and merged LoRA weights {lora_ckpts} saved in {out_ckpt}')
 

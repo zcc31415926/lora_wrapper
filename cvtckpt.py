@@ -1,16 +1,12 @@
-from lora_wrapper.ckpt_utils import embedLoRAWeights, extractLoRAWeights, mergeLoRAWeights
+import os
+import sys
+from ckpt_utils import embedLoRAWeights, extractLoRAWeights, mergeLoRAWeights
 
 
-mode = 'embed' # embed, extract, merge
-model_ckpt = 'sd.ckpt'
-lora_ckpt = 'lora.ckpt'
-# lora_ckpt = ['lora1.ckpt', 'lora2.ckpt']
+model_ckpt = '../../Projects/sd-retail/logs/v1-txt2img/checkpoints/last-003.ckpt'
+lora_ckpt = './lora.ckpt'
 
-funcs = {
-    'embed': embedLoRAWeights,
-    'extract': extractLoRAWeights,
-    'merge': mergeLoRAWeights,
-}
-assert mode in funcs.keys(), f'[ERROR] Checkpoint conversion mode {mode} not supported'
-funcs[mode](model_ckpt, lora_ckpt)
+extractLoRAWeights(model_ckpt, out_ckpt=lora_ckpt)
+embedLoRAWeights(model_ckpt, lora_ckpt=lora_ckpt, out_ckpt='./embedded.ckpt')
+mergeLoRAWeights(model_ckpt, lora_ckpts=[lora_ckpt], out_ckpt='./merged.ckpt')
 
